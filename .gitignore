@@ -1,0 +1,3 @@
+# Ignore Database Volumes
+pg_data/
+redis_data/
