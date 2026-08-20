@@ -22,7 +22,7 @@ jobs:
         cache: maven
 
     - name: Start Databases for Testing
-      run: docker-compose up -d postgres redis zookeeper kafka
+      run: docker compose up -d postgres redis zookeeper kafka
 
     - name: Run Backend Integration Tests
       working-directory: ./backend
