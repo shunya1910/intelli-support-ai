@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import './index.css';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 function App() {
   const [tickets, setTickets] = useState([]);
@@ -18,7 +19,7 @@ function App() {
 
     fetchTickets();
     
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS(`${API_BASE_URL}/ws`);
     const stompClient = new Client({
       webSocketFactory: () => socket,
       connectHeaders: {
@@ -43,7 +44,7 @@ function App() {
 
   const fetchTickets = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/tickets', { 
+      const response = await fetch(`${API_BASE_URL}/api/tickets`, { 
         cache: 'no-store',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -62,7 +63,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/tickets', {
+      const response = await fetch(`${API_BASE_URL}/api/tickets`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -89,7 +90,7 @@ function App() {
     
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/tickets/${ticketId}/reply`, {
+      const response = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}/reply`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -113,7 +114,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginForm)
