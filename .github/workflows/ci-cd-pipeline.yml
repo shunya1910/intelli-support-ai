@@ -43,8 +43,8 @@ jobs:
     # It tells GitHub: "DO NOT run this unless build-and-test passes perfectly!"
     needs: build-and-test
     
-    # We only want to deploy to the live server if the code was pushed to the main branch
-    if: github.ref == 'refs/heads/main'
+    # We only want to deploy to the live server if the code was pushed to main or master
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     
     steps:
