@@ -35,7 +35,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Expose the /ws endpoint for the React frontend to connect to via SockJS
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173")
+                .setAllowedOrigins("http://localhost:5173", "http://144.24.104.175:5173")
                 .withSockJS();
     }
 
