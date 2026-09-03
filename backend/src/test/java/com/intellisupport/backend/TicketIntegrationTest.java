@@ -24,7 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@EmbeddedKafka(partitions = 1)
+@EmbeddedKafka(partitions = 1, topics = {"ticket-events", "ticket-events.DLT"})
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false",
     "spring.datasource.driverClassName=org.h2.Driver",
@@ -34,7 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.cache.type=none",
     "spring.data.redis.repositories.enabled=false",
-    "gemini.api.key=mock-key"
+    "gemini.api.key=mock-key",
+    "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}"
 })
 public class TicketIntegrationTest {
 
