@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.cache.CacheManager;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @Service
 public class TicketConsumer {
@@ -14,32 +15,43 @@ public class TicketConsumer {
     private final AiService aiService;
     private final SimpMessagingTemplate messagingTemplate;
     private final CacheManager cacheManager;
+    private final MeterRegistry meterRegistry;
 
-    public TicketConsumer(TicketRepository ticketRepository, AiService aiService, SimpMessagingTemplate messagingTemplate, CacheManager cacheManager) {
+    public TicketConsumer(TicketRepository ticketRepository, AiService aiService, SimpMessagingTemplate messagingTemplate, CacheManager cacheManager, MeterRegistry meterRegistry) {
         this.ticketRepository = ticketRepository;
         this.aiService = aiService;
         this.messagingTemplate = messagingTemplate;
         this.cacheManager = cacheManager;
+        this.meterRegistry = meterRegistry;
     }
 
     @KafkaListener(topics = "ticket-events", groupId = "ai-processing-group")
-    public void consumeTicketEvent(Ticket ticket) throws Exception {
-        System.out.println("<<< [KAFKA CONSUMER] Picked up ticket for background processing: " + ticket.getId());
+    public void consumeTicketEvent(Ticket kafkaTicket) throws Exception {
+        System.out.println("<<< [KAFKA CONSUMER] Picked up ticket for background processing: " + kafkaTicket.getId());
         
-        // Simulate slow, heavy AI processing (e.g. LLM generation time)
-        System.out.println("<<< [KAFKA CONSUMER] AI is analyzing the ticket (Simulating delay)...");
-        Thread.sleep(4000); // Wait 4 seconds to simulate real-world AI lag
+        Ticket ticket = ticketRepository.findById(kafkaTicket.getId()).orElse(kafkaTicket);
 
-        // Send the ticket to the AI Service for analysis
-        // If this throws an exception, Spring Kafka will retry 3 times and then send it to the DLQ!
-        String aiResponse = aiService.analyzeTicket(ticket.getDescription());
+        // Simulate slow, heavy AI processing
+        System.out.println("<<< [KAFKA CONSUMER] AI is analyzing the ticket (Simulating delay)...");
+        Thread.sleep(4000);
+
+        StringBuilder history = new StringBuilder();
+        history.append("Ticket Description: ").append(ticket.getDescription()).append("\n\n");
+        for (com.intellisupport.backend.model.TicketMessage msg : ticket.getMessages()) {
+            history.append("[").append(msg.getSenderRole()).append("]: ").append(msg.getMessage()).append("\n\n");
+        }
+
+        String aiResponse = aiService.analyzeTicket(history.toString());
         
-        // "AI" decides the status and resolution
         ticket.setStatus("AI_RESOLVED");
-        ticket.setDescription(ticket.getDescription() + "\n\n[AI RESPONSE]:\n" + aiResponse);
+        
+        com.intellisupport.backend.model.TicketMessage aiMessage = new com.intellisupport.backend.model.TicketMessage(ticket, aiResponse, "AI");
+        ticket.getMessages().add(aiMessage);
         
         // Save the AI-updated ticket back to Postgres
         ticketRepository.save(ticket);
+        
+        meterRegistry.counter("tickets.resolved.ai.total").increment();
         
         // Clear the Redis cache for the all_tickets list
         if (cacheManager.getCache("all_tickets") != null) {
@@ -53,13 +65,18 @@ public class TicketConsumer {
     }
 
     @KafkaListener(topics = "ticket-events.DLT", groupId = "ai-processing-group-dlq")
-    public void consumeDlqEvent(Ticket ticket) {
-        System.err.println(">>> [DLQ] Captured FAILED ticket processing for ID: " + ticket.getId());
+    public void consumeDlqEvent(Ticket kafkaTicket) {
+        System.err.println(">>> [DLQ] Captured FAILED ticket processing for ID: " + kafkaTicket.getId());
         
+        Ticket ticket = ticketRepository.findById(kafkaTicket.getId()).orElse(kafkaTicket);
         ticket.setStatus("FAILED");
-        ticket.setDescription(ticket.getDescription() + "\n\n[SYSTEM ERROR]: AI Processing failed after 3 retries.");
+        
+        com.intellisupport.backend.model.TicketMessage sysMessage = new com.intellisupport.backend.model.TicketMessage(ticket, "AI Processing failed after 3 retries.", "SYSTEM");
+        ticket.getMessages().add(sysMessage);
         
         ticketRepository.save(ticket);
+        
+        meterRegistry.counter("tickets.failed.dlq.total").increment();
         
         if (cacheManager.getCache("all_tickets") != null) {
             cacheManager.getCache("all_tickets").clear();

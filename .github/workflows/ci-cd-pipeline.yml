@@ -1,5 +1,8 @@
 name: IntelliSupport CI/CD Pipeline
 
+# This is the trigger. It tells GitHub: 
+# Only wake up and run this robot when someone pushes code directly to the master or main branches
+# If you push to a branch named test-branch, the robot stays asleep.
 on:
   push:
     branches: [ "main", "master" ]
@@ -7,6 +10,9 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
+  # GitHub doesn't run your code on magic air. 
+  # It actually spins up a brand new, empty Linux computer (an Ubuntu server) 
+  # in their own data center just to test your code.
   build-and-test:
     runs-on: ubuntu-latest
     
@@ -51,6 +57,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    # this tells GitHub to download a mini-program 
+    # (written by a user named appleboy) whose only job 
+    # is to automatically open an SSH terminal for you.
     - name: Deploy to Cloud Server via SSH
       uses: appleboy/ssh-action@master
       with:
@@ -60,5 +69,6 @@ jobs:
         script: |
           cd /opt/intelli-support-ai
           git pull origin master
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
           docker-compose down
           docker-compose up -d --build

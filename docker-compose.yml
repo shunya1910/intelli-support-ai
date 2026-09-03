@@ -47,6 +47,22 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: intellisupport-prometheus
+    network_mode: "host"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: intellisupport-grafana
+    network_mode: "host"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+
   frontend:
     build: ./frontend
     container_name: intellisupport-frontend
@@ -64,6 +80,7 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - postgres
       - redis

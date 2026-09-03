@@ -1,0 +1,39 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "intellisupport-ai",
+    "title": "IntelliSupport AI Metrics",
+    "tags": [ "spring-boot" ],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "5s",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Total Tickets Created",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 9 },
+        "targets": [ { "expr": "tickets_total", "refId": "A" } ]
+      },
+      {
+        "type": "timeseries",
+        "title": "AI Resolved Tickets",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 9 },
+        "targets": [ { "expr": "tickets_resolved_ai_total", "refId": "A" } ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Escalated to Human",
+        "gridPos": { "x": 0, "y": 9, "w": 12, "h": 9 },
+        "targets": [ { "expr": "tickets_escalated_total", "refId": "A" } ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Failed / DLQ",
+        "gridPos": { "x": 12, "y": 9, "w": 12, "h": 9 },
+        "targets": [ { "expr": "tickets_failed_dlq_total", "refId": "A" } ]
+      }
+    ]
+  },
+  "overwrite": true
+}

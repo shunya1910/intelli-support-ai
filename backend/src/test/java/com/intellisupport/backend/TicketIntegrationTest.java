@@ -52,7 +52,7 @@ public class TicketIntegrationTest {
     @Test
     void testEndToEndTicketCreationAndResolution() {
         // 1. Generate JWT Token
-        String token = jwtUtil.generateToken("admin");
+        String token = jwtUtil.generateToken("admin", "ADMIN");
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
 
@@ -87,7 +87,7 @@ public class TicketIntegrationTest {
 
     @Test
     void testEndToEndDeadLetterQueueRecovery() {
-        String token = jwtUtil.generateToken("admin");
+        String token = jwtUtil.generateToken("admin", "ADMIN");
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
 
