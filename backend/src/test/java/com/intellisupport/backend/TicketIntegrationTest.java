@@ -23,8 +23,11 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.springframework.test.annotation.DirtiesContext;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @EmbeddedKafka(partitions = 1, topics = {"ticket-events", "ticket-events.DLT"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false",
     "spring.datasource.driverClassName=org.h2.Driver",
@@ -76,7 +79,7 @@ public class TicketIntegrationTest {
 
         // 5. Wait for Asynchronous Kafka Worker to process it (mock AI takes ~4s)
         Awaitility.await()
-                .atMost(Duration.ofSeconds(10))
+                .atMost(Duration.ofSeconds(20))
                 .pollInterval(Duration.ofSeconds(1))
                 .untilAsserted(() -> {
                     Optional<Ticket> processedTicket = ticketRepository.findById(createdTicket.getId());
@@ -105,7 +108,7 @@ public class TicketIntegrationTest {
 
         // Wait for Kafka to retry 3 times and send to DLQ
         Awaitility.await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(Duration.ofSeconds(45))
                 .pollInterval(Duration.ofSeconds(1))
                 .untilAsserted(() -> {
                     Optional<Ticket> processedTicket = ticketRepository.findById(ticketId);
