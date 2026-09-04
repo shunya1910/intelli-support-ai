@@ -27,7 +27,8 @@ public class TicketConsumer {
 
     @KafkaListener(topics = "ticket-events", groupId = "ai-processing-group")
     public void consumeTicketEvent(Ticket kafkaTicket) throws Exception {
-        System.out.println("<<< [KAFKA CONSUMER] Picked up ticket for background processing: " + kafkaTicket.getId());
+        try {
+            System.out.println("<<< [KAFKA CONSUMER] Picked up ticket for background processing: " + kafkaTicket.getId());
         
         Ticket ticket = ticketRepository.findById(kafkaTicket.getId()).orElse(kafkaTicket);
 
@@ -62,6 +63,10 @@ public class TicketConsumer {
         messagingTemplate.convertAndSend("/topic/tickets", ticket);
         
         System.out.println("<<< [KAFKA CONSUMER] Finished processing! Updated DB for ticket: " + ticket.getId());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @KafkaListener(topics = "ticket-events.DLT", groupId = "ai-processing-group-dlq")
