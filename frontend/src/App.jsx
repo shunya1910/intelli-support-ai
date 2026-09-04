@@ -252,7 +252,7 @@ function App() {
   const handleEscalate = async (ticketId) => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8080/api/tickets/${ticketId}/escalate`, {
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}/escalate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

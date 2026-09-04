@@ -8,6 +8,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.intellisupport.backend.model.TicketRepository;
 import com.intellisupport.backend.service.TicketProducer;
@@ -26,11 +27,13 @@ public class TicketController {
     private final TicketRepository ticketRepository;
     private final TicketProducer ticketProducer;
     private final MeterRegistry meterRegistry;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public TicketController(TicketRepository ticketRepository, TicketProducer ticketProducer, MeterRegistry meterRegistry) {
+    public TicketController(TicketRepository ticketRepository, TicketProducer ticketProducer, MeterRegistry meterRegistry, SimpMessagingTemplate messagingTemplate) {
         this.ticketRepository = ticketRepository;
         this.ticketProducer = ticketProducer;
         this.meterRegistry = meterRegistry;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @PostMapping
@@ -104,7 +107,9 @@ public class TicketController {
             ticketProducer.sendTicketEvent(ticket); // Send to AI only if user replied
         }
         
-        return ticketRepository.save(ticket);
+        Ticket savedTicket = ticketRepository.save(ticket);
+        messagingTemplate.convertAndSend("/topic/tickets", savedTicket);
+        return savedTicket;
     }
 
     @PostMapping("/{id}/escalate")
@@ -115,6 +120,8 @@ public class TicketController {
         
         meterRegistry.counter("tickets.escalated.total").increment();
         
-        return ticketRepository.save(ticket);
+        Ticket savedTicket = ticketRepository.save(ticket);
+        messagingTemplate.convertAndSend("/topic/tickets", savedTicket);
+        return savedTicket;
     }
 }
