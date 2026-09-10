@@ -299,6 +299,10 @@ We built a protected backend controller annotated with `@PreAuthorize("hasRole('
 ### Step 33: Google OAuth2 SSO Integration
 To lower the barrier to entry and increase enterprise security, we integrated Google OAuth2 Single Sign-On (SSO). Users can now bypass standard email/password registration and authenticate instantly using their Google accounts. The `OAuth2AuthenticationSuccessHandler` intercepts the Google payload, cross-references it with our local PostgreSQL database, and dynamically generates our standard system JWT so the frontend remains completely agnostic to the login method.
 
+**KT Note - Bypassing Google's TLD Restriction (`nip.io`):**
+Google Cloud's OAuth security policies strictly block raw IP addresses (e.g., `144.24.104.175`) from being used as Authorized Redirect URIs; they require a valid Top-Level Domain (TLD) to prevent IP spoofing. To test our production cloud deployment without purchasing a domain, we implemented a wildcard DNS hack using `nip.io`.
+By appending `.nip.io` to our public IP (i.e., `http://144.24.104.175.nip.io`), we successfully spoofed a valid `.io` domain. The `nip.io` DNS server simply routes the request straight back to the embedded IP, allowing us to seamlessly pass Google's OAuth validation layer.
+
 ### Step 34: The React Admin Command Center (`AdminDashboard.jsx`)
 On the frontend, if the decoded JWT indicates an `ADMIN` role, the UI conditionally intercepts the user and redirects them to a dedicated Command Center. 
 - **Data Visualization:** We integrated `recharts` to render live SVG-based Pie Charts visualizing the distribution of Ticket Statuses (Open vs Resolved vs Escalated).
