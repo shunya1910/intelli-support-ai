@@ -303,6 +303,12 @@ To lower the barrier to entry and increase enterprise security, we integrated Go
 Google Cloud's OAuth security policies strictly block raw IP addresses (e.g., `144.24.104.175`) from being used as Authorized Redirect URIs; they require a valid Top-Level Domain (TLD) to prevent IP spoofing. To test our production cloud deployment without purchasing a domain, we implemented a wildcard DNS hack using `nip.io`.
 By appending `.nip.io` to our public IP (i.e., `http://144.24.104.175.nip.io`), we successfully spoofed a valid `.io` domain. The `nip.io` DNS server simply routes the request straight back to the embedded IP, allowing us to seamlessly pass Google's OAuth validation layer.
 
+**The "Raw IP" Illusion:**
+Interestingly, users can still visit the site via the raw IP (e.g., `http://144.24.104.175:5173`) and successfully log in with Google. This works because the React frontend is hardcoded via `.env.production` (`VITE_API_BASE_URL=http://144.24.104.175.nip.io:8080`) to always route API calls through the `.nip.io` domain. When a user clicks "Google Login" on the raw IP, React silently redirects them to the `.nip.io` backend, which then sends the `.nip.io` `redirect_uri` to Google. Google approves the login because it is completely blind to the fact that the user originally typed the raw IP into their browser.
+
+**KT Note - The OAuth2 Success Redirect Bug (`FRONTEND_URL`):**
+During deployment, we encountered a critical bug where successful Google Logins were attempting to redirect the user back to `http://localhost:5173`. To fix this, we modified `OAuth2AuthenticationSuccessHandler.java` to dynamically read a `@Value("${frontend.url}")` property. We then injected `FRONTEND_URL=http://144.24.104.175.nip.io:5173` into the backend service inside `docker-compose.yml`, ensuring that users are routed back to the correct production domain after authenticating.
+
 ### Step 34: The React Admin Command Center (`AdminDashboard.jsx`)
 On the frontend, if the decoded JWT indicates an `ADMIN` role, the UI conditionally intercepts the user and redirects them to a dedicated Command Center. 
 - **Data Visualization:** We integrated `recharts` to render live SVG-based Pie Charts visualizing the distribution of Ticket Statuses (Open vs Resolved vs Escalated).

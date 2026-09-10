@@ -23,6 +23,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     @Autowired
     private JwtUtil jwtUtil;
 
+    @org.springframework.beans.factory.annotation.Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
     @Autowired
     private UserRepository userRepository;
 
@@ -58,6 +61,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         
         // Redirect back to React frontend with token in the query string
         // The frontend should read this token and save it to localStorage
-        response.sendRedirect("http://localhost:5173/oauth2/redirect?token=" + token);
+        response.sendRedirect(frontendUrl + "/oauth2/redirect?token=" + token);
     }
 }
