@@ -20,8 +20,8 @@ In the real world, IT Helpdesks and Customer Support teams face a massive bottle
 - **Enterprise Speed (Redis + Postgres):** Uses PostgreSQL as the persistent Source of Truth with strict relational integrity, backed by Redis caching to serve dashboard data at lightning speeds.
 
 ### Tech Stack:
-- **Frontend:** React, Vite, Vanilla CSS (Glassmorphism design), SockJS & STOMP (WebSockets)
-- **Backend:** Java 17+, Spring Boot 4.x, Spring Security (JWT)
+- **Frontend:** React, Vite, Vanilla CSS (Glassmorphism), SockJS & STOMP (WebSockets), Recharts (Data Visualization)
+- **Backend:** Java 17+, Spring Boot 4.x, Spring Security (JWT + Google OAuth2 SSO)
 - **Primary Database:** PostgreSQL 15 (Relational Data)
 - **Caching Layer:** Redis (High-speed key-value store)
 - **Event Broker:** Apache Kafka (Asynchronous messaging)
@@ -279,9 +279,28 @@ To bypass this strictly for Dev Mode without writing complex `iptables` rules, w
 
 ### Step 31: Custom Business Metrics (AI Tracking)
 While tracking CPU usage is great for IT, we need to prove the business value of our AI. We injected custom Micrometer `MeterRegistry` counters directly into our Java business logic.
-We track four critical paths:
-1. `tickets.created.total` - When a user submits a ticket.
-2. `tickets.resolved.ai.total` - When the AI successfully processes and replies.
-3. `tickets.escalated.total` - When a user flags the AI and requests a human.
-4. `tickets.failed.dlq.total` - When the AI hits a critical error 3 times and fails over to the Dead Letter Queue.
+We track four critical paths (converted to Prometheus underscore format for Grafana queries):
+1. `tickets_total` - When a user submits a ticket.
+2. `tickets_resolved_ai_total` - When the AI successfully processes and replies.
+3. `tickets_escalated_total` - When a user flags the AI and requests a human.
+4. `tickets_failed_dlq_total` - When the AI hits a critical error 3 times and fails over to the Dead Letter Queue.
 By graphing these in Grafana, product managers can instantly see the "AI Deflection Rate" (how many tickets were solved for free vs escalated to expensive human agents) in real-time.
+
+---
+
+## 13. Admin Analytics Dashboard & RBAC Management
+
+**KT Note - Providing Administrative Visibility:**
+A robust IT support system requires an administrative interface to monitor system health and manage user privileges without touching raw SQL databases.
+
+### Step 32: The Secure Analytics Endpoint (`AdminController.java`)
+We built a protected backend controller annotated with `@PreAuthorize("hasRole('ADMIN')")`. This leverages Spring Security's Method-Level Security (`@EnableMethodSecurity`). It aggregates real-time metrics (Total Tickets, Resolved, Escalated, Total Users) directly from the PostgreSQL repositories and exposes them securely to authorized users.
+
+### Step 33: Google OAuth2 SSO Integration
+To lower the barrier to entry and increase enterprise security, we integrated Google OAuth2 Single Sign-On (SSO). Users can now bypass standard email/password registration and authenticate instantly using their Google accounts. The `OAuth2AuthenticationSuccessHandler` intercepts the Google payload, cross-references it with our local PostgreSQL database, and dynamically generates our standard system JWT so the frontend remains completely agnostic to the login method.
+
+### Step 34: The React Admin Command Center (`AdminDashboard.jsx`)
+On the frontend, if the decoded JWT indicates an `ADMIN` role, the UI conditionally intercepts the user and redirects them to a dedicated Command Center. 
+- **Data Visualization:** We integrated `recharts` to render live SVG-based Pie Charts visualizing the distribution of Ticket Statuses (Open vs Resolved vs Escalated).
+- **Dynamic Role Management:** The dashboard includes an embedded User Management table where an Admin can instantly promote standard Google OAuth2 users to `ADMIN` status (or demote them) via live API calls.
+- **Unified Navigation:** The UI uses CSS transitions (`.fade-in`) to provide a seamless Single Page Application (SPA) experience when toggling between the Dashboard analytics and the live Ticket Queue to resolve escalated issues manually.

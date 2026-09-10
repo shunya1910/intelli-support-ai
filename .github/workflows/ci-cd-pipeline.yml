@@ -32,6 +32,10 @@ jobs:
 
     - name: Run Backend Integration Tests
       working-directory: ./backend
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       run: ./mvnw clean test
 
     - name: Set up Node.js
@@ -70,5 +74,7 @@ jobs:
           cd /opt/intelli-support-ai
           git pull origin master
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
           docker-compose down
           docker-compose up -d --build
