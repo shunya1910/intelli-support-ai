@@ -1,5 +1,7 @@
 # IntelliSupport AI: Technical Knowledge Transfer (KT) Document
 
+**Created by:** Sujit
+
 **Target Audience:** New Joiners, Full-Stack Engineers, DevOps Engineers
 **Purpose:** This document serves as the official Knowledge Transfer (KT) guide for the IntelliSupport AI platform. It provides a deep, technical breakdown of the system architecture, data flow, and design decisions to accelerate developer onboarding.
 
@@ -206,6 +208,11 @@ The backend uses a **Multi-Stage Dockerfile**.
 The React frontend also uses a **Multi-Stage Dockerfile**.
 - **Stage 1 (Builder):** Uses `node:20-alpine` to run `npm install` and `npm run build`, converting the React JSX into highly optimized static HTML, CSS, and JS files.
 - **Stage 2 (Runner):** Uses `nginx:alpine` as a high-performance web server to serve the static assets on port `80`. The Vite development server (which handles Hot Module Replacement and proxying) is completely discarded.
+
+**KT Note - React Router SPA Fallback in Production:**
+Because React is a Single Page Application (SPA), it only physically creates one file (`index.html`). All internal routing (like navigating to `/oauth2/redirect` after Google Login) is handled by React Router in the browser using Client-Side Rendering (CSR). 
+However, Nginx behaves like a traditional server. If a user performs a "Hard" navigation (like a page refresh, or returning from Google's OAuth consent screen) to a sub-route like `/oauth2/redirect`, Nginx searches its hard drive for a physical folder named `oauth2` and throws a `404 Not Found` error when it fails.
+To fix this, we created a custom `nginx.conf` file containing the SPA Fallback rule: `try_files $uri $uri/ /index.html;`. This instructs Nginx to fall back to serving `index.html` instead of throwing a 404, allowing React Router to wake up, read the URL, and securely log the user in. The `Dockerfile` explicitly copies this custom configuration over Nginx's default rulebook.
 
 ### Step 21: Master Orchestration (`docker-compose.yml`)
 In production, `docker-compose.yml` manages the entire stack:
