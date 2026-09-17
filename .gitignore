@@ -2,3 +2,4 @@
 pg_data/
 redis_data/
 .env
+venv/

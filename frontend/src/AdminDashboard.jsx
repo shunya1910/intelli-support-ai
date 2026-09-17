@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Users, Ticket, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Users, Ticket, AlertTriangle, CheckCircle, Clock, Trash2 } from 'lucide-react';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const AdminDashboard = ({ token, onLogout, onSwitchView }) => {
@@ -8,10 +8,46 @@ const AdminDashboard = ({ token, onLogout, onSwitchView }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const [kbFile, setKbFile] = useState(null);
+  const [kbUploading, setKbUploading] = useState(false);
+  const [kbMessage, setKbMessage] = useState('');
+  const [kbDocuments, setKbDocuments] = useState([]);
 
   useEffect(() => {
     fetchData();
+    fetchKbDocuments();
   }, []);
+
+  const fetchKbDocuments = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/knowledge-base/documents`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) {
+        const docs = await res.json();
+        setKbDocuments(docs);
+      }
+    } catch (err) {
+      console.error("Failed to fetch KB documents:", err);
+    }
+  };
+
+  const handleDeleteDocument = async (fileName) => {
+    if (!window.confirm(`Are you sure you want to delete ${fileName} from the AI Knowledge Base?`)) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/knowledge-base/documents/${fileName}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setKbMessage(`Success: Deleted ${fileName}`);
+        fetchKbDocuments();
+      } else {
+        setKbMessage(`Error: Failed to delete ${fileName}`);
+      }
+    } catch (err) {
+      setKbMessage(`Error: ${err.message}`);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -50,6 +86,37 @@ const AdminDashboard = ({ token, onLogout, onSwitchView }) => {
       fetchData(); // Refresh list
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!kbFile) return;
+    
+    const formData = new FormData();
+    formData.append('file', kbFile);
+    
+    setKbUploading(true);
+    setKbMessage('');
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/knowledge-base/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      
+      const text = await res.text();
+      if (!res.ok) throw new Error(text);
+      
+      setKbMessage(`Success: ${text}`);
+      setKbFile(null);
+      fetchKbDocuments();
+      // Reset input file value if needed, handled by React state mostly
+    } catch (err) {
+      setKbMessage(`Error: ${err.message}`);
+    } finally {
+      setKbUploading(false);
     }
   };
 
@@ -152,6 +219,55 @@ const AdminDashboard = ({ token, onLogout, onSwitchView }) => {
              </div>
           </div>
         </div>
+
+         {/* Knowledge Base Upload */}
+         <div className="glass-card" style={{ padding: '15px', marginBottom: '20px' }}>
+           <h3 className="card-title" style={{ fontSize: '1.1rem', marginBottom: '10px' }}>AI Knowledge Base (RAG)</h3>
+           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '15px' }}>Upload a PDF document to train the AI Support Agent.</p>
+           
+           <form onSubmit={handleFileUpload} style={{ display: 'flex', gap: '15px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px' }}>
+             <input 
+                type="file" 
+                accept=".pdf" 
+                onChange={(e) => setKbFile(e.target.files[0])}
+                style={{ color: 'white' }}
+             />
+             <button 
+                type="submit" 
+                disabled={!kbFile || kbUploading}
+                style={{ 
+                  background: kbUploading ? 'var(--text-muted)' : 'var(--primary)', 
+                  color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', 
+                  cursor: kbUploading ? 'not-allowed' : 'pointer', fontWeight: 'bold' 
+                }}
+             >
+                {kbUploading ? 'Uploading & Processing...' : 'Upload & Train AI'}
+             </button>
+           </form>
+           {kbMessage && (
+              <div style={{ marginTop: '10px', padding: '10px', borderRadius: '6px', fontSize: '0.9rem', background: kbMessage.startsWith('Error') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)', color: kbMessage.startsWith('Error') ? '#fca5a5' : '#4ade80' }}>
+                {kbMessage}
+              </div>
+           )}
+           {kbDocuments.length > 0 && (
+             <div style={{ marginTop: '20px' }}>
+               <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--text-muted)' }}>Active Documents</h4>
+               <ul style={{ listStyleType: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                 {kbDocuments.map((doc, idx) => (
+                   <li key={idx} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '6px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                       <CheckCircle size={16} color="#4ade80" />
+                       {doc}
+                     </div>
+                     <button onClick={() => handleDeleteDocument(doc)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }} title="Delete Document">
+                       <Trash2 size={16} />
+                     </button>
+                   </li>
+                 ))}
+               </ul>
+             </div>
+           )}
+         </div>
 
         {/* User Management Table */}
         <div className="glass-card" style={{ padding: '15px' }}>

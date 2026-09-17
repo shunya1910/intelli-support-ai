@@ -76,5 +76,7 @@ jobs:
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
           echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+          echo "FRONTEND_URL=http://144.24.104.175.nip.io:5173" >> .env
+          sed -i 's/localhost/144.24.104.175.nip.io/g' frontend/.env.production
           docker-compose down
           docker-compose up -d --build

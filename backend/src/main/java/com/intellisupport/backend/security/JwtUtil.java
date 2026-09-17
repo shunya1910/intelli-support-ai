@@ -10,7 +10,7 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final Key key = Keys.hmacShaKeyFor("intellisupport-super-secret-key-that-must-be-very-long-32-bytes!".getBytes());
     private final long EXPIRATION_TIME = 86400000; // 1 day
 
     public String generateToken(String username, String role) {

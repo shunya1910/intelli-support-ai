@@ -5,6 +5,21 @@ import './index.css';
 import AdminDashboard from './AdminDashboard';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
+const formatMarkdown = (text) => {
+  if (!text) return { __html: '' };
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+    
+  // User requested ** to render as both bold and italic
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  
+  return { __html: html };
+};
 function App() {
   const [tickets, setTickets] = useState([]);
   const [formData, setFormData] = useState({ title: '', description: '', severity: 'LOW', category: 'SOFTWARE' });
@@ -450,7 +465,7 @@ function App() {
                         {ticket.status === 'AI_RESOLVED' ? '✨ AI_RESOLVED' : ticket.status === 'FAILED' ? '❌ FAILED' : ticket.status === 'ESCALATED' ? '⚠️ ESCALATED' : ticket.status}
                       </span>
                       <span className="ticket-date">
-                        {ticket.username} • {new Date(ticket.createdAt).toLocaleDateString()}
+                        {ticket.username} • {new Date(ticket.createdAt + (ticket.createdAt && !ticket.createdAt.endsWith('Z') ? 'Z' : '')).toLocaleDateString()}
                       </span>
                     </div>
                     <div style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
@@ -471,11 +486,9 @@ function App() {
                             fontSize: '0.9rem'
                           }}>
                             <div style={{ fontSize: '0.7rem', opacity: 0.7, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                              {msg.senderRole} • {new Date(msg.createdAt).toLocaleTimeString()}
+                              {msg.senderRole} • {new Date(msg.createdAt + (msg.createdAt && !msg.createdAt.endsWith('Z') ? 'Z' : '')).toLocaleTimeString()}
                             </div>
-                            <div style={{ whiteSpace: 'pre-wrap' }}>
-                              {msg.message}
-                            </div>
+                            <div style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={formatMarkdown(msg.message)} />
                           </div>
                         ))
                       ) : (

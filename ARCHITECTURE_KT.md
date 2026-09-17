@@ -321,3 +321,29 @@ On the frontend, if the decoded JWT indicates an `ADMIN` role, the UI conditiona
 - **Data Visualization:** We integrated `recharts` to render live SVG-based Pie Charts visualizing the distribution of Ticket Statuses (Open vs Resolved vs Escalated).
 - **Dynamic Role Management:** The dashboard includes an embedded User Management table where an Admin can instantly promote standard Google OAuth2 users to `ADMIN` status (or demote them) via live API calls.
 - **Unified Navigation:** The UI uses CSS transitions (`.fade-in`) to provide a seamless Single Page Application (SPA) experience when toggling between the Dashboard analytics and the live Ticket Queue to resolve escalated issues manually.
+
+---
+
+## 14. Retrieval-Augmented Generation (RAG) & Dynamic Knowledge Base
+
+**KT Note - The Hallucination Problem:**
+By default, Large Language Models (LLMs) like Google Gemini are trained on public data. If a user asks, "What is our company's PTO policy?", the AI will either hallucinate a generic answer or refuse to answer. To make the AI a true "expert" on *our* specific company rules, we implemented **Retrieval-Augmented Generation (RAG)**.
+
+### Step 35: The Vector Database (`vector_store` in PostgreSQL)
+Instead of adding a massive external dependency like Pinecone or Weaviate, we enabled the `pgvector` extension directly inside our existing PostgreSQL database. This allows us to store mathematically converted text chunks (Embeddings) right next to our standard relational data (Users and Tickets).
+When an Admin uploads a PDF (e.g., `Company_Policy_2026.pdf`), the backend reads the document, slices it into smaller paragraphs ("chunks"), mathematically converts each chunk into a 768-dimension vector using Google's Embedding model, and saves them into the `vector_store` table.
+
+### Step 36: Context Retrieval (`AiService.java`)
+When a user asks a question, the system converts their question into a vector and performs a **Cosine Similarity Search** in the database to find the 3 most mathematically relevant chunks of information. 
+The system injects these 3 chunks directly into the hidden system prompt sent to Gemini:
+`"Use the KNOWLEDGE BASE CONTEXT below to inform your answer..."`
+This restricts the AI from hallucinating and forces it to cite our actual company policy.
+
+### Step 37: Knowledge Base Management & Deletion
+To prevent the AI from citing outdated policies, we added a full lifecycle management system to the Admin Dashboard.
+- **Listing Documents:** The dashboard fetches all unique file names by querying the `jsonb` metadata column in PostgreSQL (`metadata->>'file_name'`).
+- **Targeted Deletion:** When an Admin deletes a document, the backend executes `DELETE FROM vector_store WHERE metadata->>'file_name' = ?`. This instantly locates and destroys every single AI memory chunk that came from that specific PDF file, ensuring zero cross-contamination when new policies are uploaded.
+
+### Step 38: UI Formatting & Markdown Enhancement (`App.jsx`)
+To make the AI's responses highly readable, we modified the System Prompt in `AiService.java` to strictly command the model to output Markdown formatting (e.g., `**bold**`).
+Because React treats strings as raw text, we implemented a custom Markdown parser directly in the frontend chat renderer. Using simple Regex, it converts AI syntax like `**important rule**` into beautiful HTML `<strong><em>important rule</em></strong>`, ensuring the final user experience is visually crisp and professional.

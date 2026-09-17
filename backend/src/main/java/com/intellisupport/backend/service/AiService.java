@@ -1,14 +1,24 @@
 package com.intellisupport.backend.service;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 import java.util.Map;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AiService {
+
+    private final VectorStore vectorStore;
+
+    public AiService(VectorStore vectorStore) {
+        this.vectorStore = vectorStore;
+    }
 
     @Value("${gemini.api.key:mock-key}")
     private String apiKey;
@@ -40,8 +50,16 @@ public class AiService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
+            // RAG Integration: Retrieve Context from VectorStore
+            List<Document> similarDocuments = vectorStore.similaritySearch(SearchRequest.query(description).withTopK(3));
+            String retrievedContext = similarDocuments.stream()
+                    .map(Document::getContent)
+                    .collect(Collectors.joining("\n---\n"));
+
             String prompt = "You are an expert IT assistant. Read the following conversation history for a support ticket. " +
-                            "Provide a brief, technical, and helpful response to the user's latest message.\n\n" +
+                            "Use the KNOWLEDGE BASE CONTEXT below to inform your answer. If the answer is not in the context, use your best judgement.\n" +
+                            "IMPORTANT: You MUST use markdown bold (**text**) to highlight important keywords, rules, and numbers in your response.\n\n" +
+                            "KNOWLEDGE BASE CONTEXT:\n" + retrievedContext + "\n\n" +
                             "CONVERSATION HISTORY:\n" + description;
             
             Map<String, Object> body = Map.of(

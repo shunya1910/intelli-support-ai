@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import com.intellisupport.backend.service.AiService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -57,7 +57,7 @@ public class TicketIntegrationTest {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @MockitoBean
+    @MockBean
     private AiService aiService;
 
     @Test
