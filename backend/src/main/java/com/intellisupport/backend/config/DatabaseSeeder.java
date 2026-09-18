@@ -15,7 +15,7 @@ public class DatabaseSeeder {
     public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
             if (userRepository.findByUsername("admin").isEmpty()) {
-                userRepository.save(new User("admin", passwordEncoder.encode("admin"), Role.ADMIN));
+                userRepository.save(new User("admin", "admin@intellisupport.com", passwordEncoder.encode("admin"), Role.ADMIN));
             }
         };
     }

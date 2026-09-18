@@ -25,7 +25,7 @@ function App() {
   const [formData, setFormData] = useState({ title: '', description: '', severity: 'LOW', category: 'SOFTWARE' });
   const [replyData, setReplyData] = useState({});
   const [filter, setFilter] = useState({ status: 'ALL', severity: 'ALL', category: 'ALL' });
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginForm, setLoginForm] = useState({ username: '', password: '', email: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('jwt') || null);
   const [loading, setLoading] = useState(false);
@@ -232,6 +232,18 @@ function App() {
                   placeholder="Enter username"
                 />
               </div>
+              {isRegistering && (
+                <div className="form-group">
+                  <label>Email</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
+                    placeholder="Enter email address"
+                  />
+                </div>
+              )}
               <div className="form-group" style={{ position: 'relative' }}>
                 <label>Password</label>
                 <input 

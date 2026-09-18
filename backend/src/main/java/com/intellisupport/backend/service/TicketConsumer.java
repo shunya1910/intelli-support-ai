@@ -16,13 +16,15 @@ public class TicketConsumer {
     private final SimpMessagingTemplate messagingTemplate;
     private final CacheManager cacheManager;
     private final MeterRegistry meterRegistry;
+    private final EmailService emailService;
 
-    public TicketConsumer(TicketRepository ticketRepository, AiService aiService, SimpMessagingTemplate messagingTemplate, CacheManager cacheManager, MeterRegistry meterRegistry) {
+    public TicketConsumer(TicketRepository ticketRepository, AiService aiService, SimpMessagingTemplate messagingTemplate, CacheManager cacheManager, MeterRegistry meterRegistry, EmailService emailService) {
         this.ticketRepository = ticketRepository;
         this.aiService = aiService;
         this.messagingTemplate = messagingTemplate;
         this.cacheManager = cacheManager;
         this.meterRegistry = meterRegistry;
+        this.emailService = emailService;
     }
 
     @KafkaListener(topics = "ticket-events", groupId = "ai-processing-group")
@@ -61,6 +63,9 @@ public class TicketConsumer {
 
         // Instantly push the updated ticket to the React Frontend via WebSockets!
         messagingTemplate.convertAndSend("/topic/tickets", ticket);
+        
+        // Send email notification to user
+        emailService.sendTicketUpdateEmail(ticket.getUsername(), ticket.getTitle(), aiResponse);
         
         System.out.println("<<< [KAFKA CONSUMER] Finished processing! Updated DB for ticket: " + ticket.getId());
         } catch (Exception e) {

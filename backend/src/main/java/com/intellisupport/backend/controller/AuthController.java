@@ -42,20 +42,21 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
+        String email = credentials.get("email");
         String password = credentials.get("password");
 
-        if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
+        if (username == null || username.trim().isEmpty() || email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username, email, and password are required"));
         }
 
         if (userRepository.findByUsername(username).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username is already taken"));
         }
 
-        User newUser = new User(username, passwordEncoder.encode(password), com.intellisupport.backend.model.Role.USER);
+        User newUser = new User(username, email, passwordEncoder.encode(password), com.intellisupport.backend.model.Role.USER);
         userRepository.save(newUser);
 
         String token = jwtUtil.generateToken(username, newUser.getRole().name());
-        return ResponseEntity.ok(Map.of("token", token, "username", username, "role", newUser.getRole().name()));
+        return ResponseEntity.ok(Map.of("token", token, "username", username, "email", email, "role", newUser.getRole().name()));
     }
 }

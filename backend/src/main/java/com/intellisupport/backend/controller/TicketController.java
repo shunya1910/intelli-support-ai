@@ -28,12 +28,14 @@ public class TicketController {
     private final TicketProducer ticketProducer;
     private final MeterRegistry meterRegistry;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.intellisupport.backend.service.EmailService emailService;
 
-    public TicketController(TicketRepository ticketRepository, TicketProducer ticketProducer, MeterRegistry meterRegistry, SimpMessagingTemplate messagingTemplate) {
+    public TicketController(TicketRepository ticketRepository, TicketProducer ticketProducer, MeterRegistry meterRegistry, SimpMessagingTemplate messagingTemplate, com.intellisupport.backend.service.EmailService emailService) {
         this.ticketRepository = ticketRepository;
         this.ticketProducer = ticketProducer;
         this.meterRegistry = meterRegistry;
         this.messagingTemplate = messagingTemplate;
+        this.emailService = emailService;
     }
 
     @PostMapping
@@ -102,6 +104,7 @@ public class TicketController {
         
         if (isAdmin) {
             ticket.setStatus("ADMIN_REPLIED");
+            emailService.sendTicketUpdateEmail(ticket.getUsername(), ticket.getTitle(), replyText);
         } else {
             ticket.setStatus("OPEN");
             ticketProducer.sendTicketEvent(ticket); // Send to AI only if user replied
